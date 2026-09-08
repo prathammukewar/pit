@@ -164,7 +164,7 @@ summary:focus-visible,
 
 main {
   display: grid;
-  grid-template-columns: 244px minmax(0, 1fr) 272px;
+  grid-template-columns: 244px minmax(0, 1fr) 300px;
   gap: 12px;
   align-items: start;
 }
