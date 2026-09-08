@@ -1,15 +1,15 @@
 # pit
 
-[![ci](https://github.com/MathMaster1296/pit/actions/workflows/ci.yml/badge.svg)](https://github.com/MathMaster1296/pit/actions/workflows/ci.yml)
+[![ci](https://github.com/prathammukewar/pit/actions/workflows/ci.yml/badge.svg)](https://github.com/prathammukewar/pit/actions/workflows/ci.yml)
 
 A tiny exchange that runs in your browser: a real limit order book matching
 engine written in Rust, compiled to WebAssembly, with three market makers, a
 crowd of noise traders, and an occasional informed trader who knows where the
 price is going before everyone else.
 
-**Live demo: [mathmaster1296.github.io/pit](https://mathmaster1296.github.io/pit)**
+**Live demo: [prathammukewar.github.io/pit](https://prathammukewar.github.io/pit)**
 
-[![the pit trading screen: the order book, a price chart with a shaded informed episode, and the desks table with everyone's p&l](web/card.png)](https://mathmaster1296.github.io/pit/)
+[![the pit trading screen: the order book, a price chart with a shaded informed episode, and the desks table with everyone's p&l](web/card.png)](https://prathammukewar.github.io/pit/)
 
 That shaded band on the chart is an informed trader unloading before a drop
 they saw coming. The white line is the traded mid; the dashed line is the

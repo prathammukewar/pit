@@ -92,10 +92,11 @@ function setSide(el, qty, mineQty, maxQty, px) {
   const pxStr = px > 0 ? String(px) : '';
   if (el.dataset.px !== pxStr) {
     el.dataset.px = pxStr;
-    el.title = px > 0
+    const what = px > 0
       ? `rest a ${el.classList.contains('ask') ? 'sell' : 'buy'} limit at ${price(px)}`
       : '';
-    el.setAttribute('aria-label', el.title);
+    el.dataset.tip = what;
+    el.setAttribute('aria-label', what);
   }
   const [bar, a, b] = el.children;
   const qtySpan = el.classList.contains('ask') ? a : b;

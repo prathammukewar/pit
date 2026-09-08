@@ -23,7 +23,7 @@ export class Desks {
       if (d.cls) tr.className = d.cls;
       const name = document.createElement('td');
       name.textContent = d.name;
-      name.title = d.tip;
+      name.dataset.tip = d.tip;
       const pos = document.createElement('td');
       pos.className = 'pos';
       const vol = document.createElement('td');

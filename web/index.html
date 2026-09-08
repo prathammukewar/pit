@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>pit</title>
-<meta name="description" content="A tiny exchange you can trade on: a real matching engine compiled to WebAssembly, three market makers, and a crowd of noise traders.">
+<meta name="description" content="A tiny stock exchange that runs in your browser: a real matching engine compiled to WebAssembly, three market-making bots, a crowd of noise traders, and a desk for you.">
 <meta property="og:title" content="pit">
 <meta property="og:description" content="A tiny exchange you can trade on, running entirely in your browser: three market makers, a crowd of noise traders, and sometimes someone who knows something.">
-<meta property="og:image" content="https://mathmaster1296.github.io/pit/card.png">
-<meta property="og:url" content="https://mathmaster1296.github.io/pit/">
+<meta property="og:image" content="https://prathammukewar.github.io/pit/card.png">
+<meta property="og:url" content="https://prathammukewar.github.io/pit/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23101418'/><rect x='2' y='7' width='3' height='7' fill='%234caf7d'/><rect x='6.5' y='3' width='3' height='11' fill='%23e05555'/><rect x='11' y='5' width='3' height='9' fill='%234caf7d'/></svg>">
@@ -29,46 +29,68 @@
 <header>
   <div class="title">
     <h1>pit</h1>
-    <p class="tagline">a tiny exchange: three market makers, a crowd of noise traders, and sometimes someone who knows something</p>
+    <p class="tagline">A tiny stock exchange that runs in your browser. Three market-making bots, a crowd of noise traders, and every so often someone who knows something. You have a desk too.</p>
   </div>
-  <div class="controls">
-    <label>seed <input id="seed" type="number" min="1" max="99999999" title="any number works: the same seed always produces the same market"></label>
-    <button id="restart" title="start a fresh market from this seed">restart</button>
-    <button id="pause" title="space also works">pause</button>
+  <div class="controls" id="primary-controls">
+    <label>seed <input id="seed" type="number" min="1" max="99999999" data-tip="Any number works. The same seed always produces the same market, tick for tick, so a seed is a replay."></label>
+    <button id="restart" data-tip="Start a fresh market from the seed in the box.">restart</button>
+    <button id="pause" data-tip="Freeze time. The space bar does this too.">pause</button>
     <label>speed
-      <select id="speed" title="simulation ticks per animation frame">
+      <select id="speed" data-tip="How many simulation ticks pass per animation frame. 32x is for fast-forwarding to the interesting parts.">
         <option value="1">1x</option>
         <option value="2" selected>2x</option>
         <option value="8">8x</option>
         <option value="32">32x</option>
       </select>
     </label>
-    <button id="today" title="one shared seed per day, same market for everyone">today's market</button>
-    <button id="share" title="copy a link that replays this exact run">share</button>
-    <label>volatility
-      <select id="vol-mult" title="scales the calm random walk of fair value">
+    <button id="today" data-tip="One shared seed per calendar day, so everyone in the world gets this same market today.">today's market</button>
+    <button id="share" data-tip="Copy a link that replays exactly this run.">share</button>
+    <button id="tour" data-tip="A one-minute walk through the screen.">tour</button>
+    <button id="settings-toggle" aria-expanded="false" aria-controls="settings" data-tip="Market weather, sound, theme, and colors.">settings</button>
+  </div>
+</header>
+
+<section id="settings" class="panel settings" hidden>
+  <h2>settings <span class="hint">market weather on the left, comfort on the right</span></h2>
+  <div class="settings-grid">
+    <div class="setting">
+      <label for="vol-mult">volatility</label>
+      <select id="vol-mult">
         <option value="0.5">0.5x</option>
         <option value="1" selected>1x</option>
         <option value="2">2x</option>
         <option value="3">3x</option>
       </select>
-    </label>
-    <label>informed flow
-      <select id="inf-mult" title="how often the informed trader shows up">
+      <p>How jumpy the hidden fair value is. Everything was tuned at 1x; the higher settings exist to watch the desks suffer.</p>
+    </div>
+    <div class="setting">
+      <label for="inf-mult">informed flow</label>
+      <select id="inf-mult">
         <option value="0">0x</option>
         <option value="0.5">0.5x</option>
         <option value="1" selected>1x</option>
         <option value="2">2x</option>
         <option value="4">4x</option>
       </select>
-    </label>
+      <p>How often a trader who can see the future shows up. 0x turns the shaded episodes off entirely, if you want a calm market to practice in.</p>
+    </div>
+    <div class="setting">
+      <span class="label">sound</span>
+      <button id="sound">off</button>
+      <p>Tape clicks pitched by side, an alert when informed flow arrives, a low gong when trading halts. Synthesized, quiet, off by default.</p>
+    </div>
+    <div class="setting">
+      <span class="label">theme</span>
+      <button id="theme">dark</button>
+      <p>Dark or light page. Remembered next time.</p>
+    </div>
+    <div class="setting">
+      <span class="label">colors</span>
+      <button id="palette">green/red</button>
+      <p>Blue for buys and orange for sells, for anyone who can't separate green from red. Buys point up and sells point down everywhere too, so the side never depends on color alone.</p>
+    </div>
   </div>
-  <div class="controls prefs">
-    <button id="sound" title="tape clicks and floor alarms, synthesized">sound: off</button>
-    <button id="theme" title="dark or light">theme: dark</button>
-    <button id="palette" title="swap green and red for blue and orange">colors: green/red</button>
-  </div>
-</header>
+</section>
 
 <noscript>
   <div class="panel notice">This page needs JavaScript and WebAssembly: the
@@ -77,21 +99,25 @@
 </noscript>
 
 <main id="app" hidden>
-  <section class="ladder-panel panel">
-    <h2>book <span class="hint">click a side to place a limit order</span></h2>
+  <section class="ladder-panel panel" id="ladder-panel">
+    <h2>book
+      <button class="help" data-tip="Every price where someone is waiting to trade. Green numbers on the left are buyers (bids), red on the right are sellers (asks); the bars show size. Click a price to rest your own order there. The mountain underneath is the same book drawn as cumulative size on each side of the gap." aria-label="what is the book?">?</button>
+      <span class="hint">click a price to rest an order</span>
+    </h2>
     <div id="ladder"></div>
-    <canvas id="depth" role="img" aria-label="cumulative depth chart: resting bid quantity to the left of the spread, resting ask quantity to the right" title="cumulative depth: how much is resting at or better than each price"></canvas>
+    <canvas id="depth" role="img" aria-label="cumulative depth chart: resting bid quantity to the left of the spread, resting ask quantity to the right" data-tip="Cumulative depth: how much is resting at or better than each price. The valley in the middle is the spread."></canvas>
   </section>
 
   <section class="center-panel">
-    <div class="panel chart-panel">
+    <div class="panel chart-panel" id="chart-panel">
       <h2><span>market
-        <span id="quote-line" title="best bid / best ask, and the last traded price"></span>
+        <button class="help" data-tip="The solid line is where it actually trades (the mid). The dashed line is a hidden fair value the price keeps chasing. When the chart shades red, a trader who knows where the value is going has arrived. Small triangles are trades, pointing up for buys and down for sells; amber squares are yours." aria-label="what is the market chart?">?</button>
+        <span id="quote-line" data-tip="Best bid / best ask right now, and the last traded price."></span>
         <span id="episode-pill" class="badge hot" hidden
-          title="an informed trader is in the market and can see where fair value is headed">informed flow</span>
+          data-tip="An informed trader is in the market and can see where fair value is headed. Whoever is quoting tight spreads right now is about to pay for it.">informed flow</span>
         <span id="halt-pill" class="badge hot" hidden
-          title="the circuit breaker tripped: trading is stopped and every resting order was purged">halted</span>
-        <button id="view-toggle" class="mini" title="switch between the price chart and the book heatmap">view: chart</button></span>
+          data-tip="The circuit breaker tripped: trading is stopped and every resting order was purged, yours included. Fair value keeps moving underneath, so expect a gap at the reopen.">halted</span>
+        <button id="view-toggle" class="mini" data-tip="Switch between the price chart and the book heatmap, where every resting level glows by its size over time.">view: chart</button></span>
         <span class="legend">
           <span class="swatch mid"></span>mid
           <span class="swatch fair"></span>fair value
@@ -101,33 +127,39 @@
       <canvas id="chart" role="img" aria-label="price chart: the traded mid as a solid line, the hidden fair value dashed, each trade as a small mark, and shaded stretches while informed flow is active. the desks table below carries the numbers."></canvas>
       <canvas id="heatmap" hidden role="img" aria-label="book heatmap: time runs left to right, price top to bottom, and each resting level glows brighter the more size sits on it"></canvas>
     </div>
-    <div class="panel desks-panel">
-      <h2>the desks</h2>
+    <div class="panel desks-panel" id="desks-panel">
+      <h2>the desks
+        <button class="help" data-tip="Everyone trading on this floor. Hover a name to see how that desk thinks. pos is the net lots it holds, volume is lots traded so far, and p&l is its cash plus its position valued at the current mid, so it moves while a desk holds." aria-label="what are the desks?">?</button>
+      </h2>
       <table id="desks">
-        <thead><tr><th>desk</th><th title="net position in lots">pos</th><th title="total lots traded">volume</th><th title="cash plus position marked to the mid, in dollars">p&amp;l</th><th class="spark"></th><th></th></tr></thead>
+        <thead><tr><th>desk</th><th data-tip="Net position in lots. Positive is long, negative is short.">pos</th><th data-tip="Total lots traded so far this session.">volume</th><th data-tip="Cash plus position marked to the current mid, in dollars. It moves while a desk holds.">p&amp;l</th><th class="spark" data-tip="Recent p&l, as a shape.">trend</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
   </section>
 
   <section class="side-panel">
-    <div class="panel user-panel">
-      <h2>your desk</h2>
+    <div class="panel user-panel" id="user-panel">
+      <h2>your desk
+        <button class="help" data-tip="qty sets your order size. buy mkt and sell mkt trade immediately at the best available price. join bid and join ask rest a limit order at the best price on that side. flatten gets you out of your whole position in one click." aria-label="what is my desk?">?</button>
+      </h2>
       <div id="user-stats" class="user-stats"></div>
       <div class="entry">
-        <label>qty <input id="qty" type="number" value="10" min="1" max="500"></label>
-        <button id="buy" class="buy">buy mkt</button>
-        <button id="sell" class="sell">sell mkt</button>
+        <label>qty <input id="qty" type="number" value="10" min="1" max="500" data-tip="Order size in lots, 1 to 500."></label>
+        <button id="buy" class="buy" data-tip="Buy right now at the best available price. You pay the spread for the speed.">buy mkt</button>
+        <button id="sell" class="sell" data-tip="Sell right now at the best available price.">sell mkt</button>
       </div>
       <div class="entry">
-        <button id="join-bid" class="buy" title="rest a buy limit at the current best bid">join bid</button>
-        <button id="join-ask" class="sell" title="rest a sell limit at the current best ask">join ask</button>
-        <button id="flatten" title="market out of your whole position">flatten</button>
+        <button id="join-bid" class="buy" data-tip="Rest a buy order at the current best bid and wait for a seller to come to you.">join bid</button>
+        <button id="join-ask" class="sell" data-tip="Rest a sell order at the current best ask and wait for a buyer.">join ask</button>
+        <button id="flatten" data-tip="Market out of your whole position in one click.">flatten</button>
       </div>
       <div id="orders" class="orders"></div>
     </div>
-    <div class="panel tape-panel">
-      <h2>tape</h2>
+    <div class="panel tape-panel" id="tape-panel">
+      <h2>tape
+        <button class="help" data-tip="Every trade as it prints: size at price. An up arrow means a buyer came in and took the offer; a down arrow means a seller hit the bid. 'you' marks your fills, 'bot' marks your bot's." aria-label="what is the tape?">?</button>
+      </h2>
       <ul id="tape"></ul>
     </div>
   </section>
@@ -136,20 +168,24 @@
 <div id="loading" class="panel notice">loading the engine...</div>
 <div id="toasts" aria-live="polite"></div>
 
-<section class="bot-lab panel">
-  <h2>bot lab <span class="hint">write a desk in javascript. it trades for real, against everyone above.</span></h2>
+<section class="bot-lab panel" id="bot-lab">
+  <h2>bot lab
+    <button class="help" data-tip="Write a trading strategy in JavaScript, or load a preset, and hire it. It becomes the 'your bot' desk and trades through the same engine as everyone else. Run a season to backtest it against 100,000 ticks in about a second." aria-label="what is the bot lab?">?</button>
+    <span class="hint">write a desk in javascript. it trades for real, against everyone above.</span>
+  </h2>
+  <p class="lead">Not a coder? Pick a preset, press hire, and watch the "your bot" row in the desks table. The presets are commented line by line, so change one number at a time and see what happens.</p>
   <div class="bot-controls">
     <label>preset
-      <select id="bot-preset">
+      <select id="bot-preset" data-tip="Starting points, each one commented. None of them wins as written.">
         <option value="template" selected>blank template</option>
         <option value="join the touch">join the touch</option>
         <option value="skew clone">skew clone</option>
         <option value="momentum">momentum</option>
       </select>
     </label>
-    <button id="bot-run">hire bot</button>
+    <button id="bot-run" class="primary" data-tip="Compile the code below and put it on the floor. Press again to take it off.">hire bot</button>
     <label>latency
-      <select id="bot-latency" title="how many ticks stale your bot's view of the market is">
+      <select id="bot-latency" data-tip="How many ticks stale your bot's view of the market is. Its orders still land on the live book, which is what being slow feels like. The built-in desks all run at 0.">
         <option value="0" selected>0 ticks</option>
         <option value="2">2 ticks</option>
         <option value="5">5 ticks</option>
@@ -161,22 +197,19 @@
   </div>
   <textarea id="bot-code" spellcheck="false" rows="16" aria-label="bot strategy code"></textarea>
   <div class="bot-controls">
-    <button id="bot-season" title="backtest the code above against a fresh copy of this seed, plus a run without you for comparison">run a season</button>
-    <button id="bot-ladder" title="the same season at five different latencies">latency ladder</button>
-    <button id="bot-sweep" title="the same season across eight seeds">seed sweep</button>
-    <button id="bot-share" title="copy a link that carries this code and seed">share bot</button>
+    <button id="bot-season" data-tip="Backtest the code above against 100,000 ticks of a fresh copy of this seed, plus the same market without you, so the report can say what your presence changed.">run a season</button>
+    <button id="bot-ladder" data-tip="The same season five times, with your bot 0, 2, 5, 10, and 25 ticks behind the market. Puts a dollar figure on what speed is worth to this strategy.">latency ladder</button>
+    <button id="bot-sweep" data-tip="The same season across eight different seeds, with the win rate against mm-wary. One seed can flatter anyone.">seed sweep</button>
+    <button id="bot-share" data-tip="Copy a link that carries this code and seed, so someone else can rerun your exact season.">share bot</button>
     <span class="hint">each season is 100,000 ticks, headless, about a second. the live market keeps running.</span>
   </div>
   <div id="season-report" class="season" hidden></div>
   <p class="fine">Your code runs once per tick through the same matching engine as
   every other desk, and shows up as "your bot" in the table with its own p&amp;l.
   Caps: 6 actions per tick, 200 lots per order, and an exception gets the bot
-  fired on the spot. The latency dial hands your bot a view of the market from
-  that many ticks ago while its orders still land on the book as it is now,
-  which is roughly what being slow feels like; the built-in desks all run at
-  zero. The presets are starting points, and none of them wins as written:
-  try to beat mm-wary over a long stretch, and mind the shaded episodes. The
-  code stays in your browser and survives reloads.</p>
+  fired on the spot. The presets are starting points, and none of them wins as
+  written: try to beat mm-wary over a long stretch, and mind the shaded
+  episodes. The code stays in your browser and survives reloads.</p>
 </section>
 
 <details class="about panel">
@@ -217,9 +250,9 @@
   <p>The view button on the market panel swaps the price chart for a book
   heatmap: time runs left to right, price top to bottom, and every resting
   level glows by its size, so you can watch liquidity pull away before a move
-  and pile back in after. The volatility and informed flow dials in the
-  header change the weather; everything was tuned at 1x, and turning them up
-  is for watching the desks suffer on purpose.</p>
+  and pile back in after. The volatility and informed flow dials in settings
+  change the weather; everything was tuned at 1x, and turning them up is for
+  watching the desks suffer on purpose.</p>
 
   <p>When clicking gets old, scroll down to the bot lab and put your strategy
   in code. Your bot becomes a real desk on this floor, and the only real
@@ -237,12 +270,13 @@
   bug. You paid the spread, which is the thing everyone else here is fighting
   over.</p>
 
-  <p>A few things for comfort. The theme button switches to a light page, and
-  the colors button swaps green and red for blue and orange if you have
+  <p>A few things for comfort, all in settings. The theme switches to a light
+  page, and colors swaps green and red for blue and orange if you have
   trouble telling them apart (buys also point up and sells point down on the
   tape and the chart, so the side never depends on color alone). Every
   control works from the keyboard, including the book: tab to a price and
-  press enter to rest an order there. Both preferences are remembered.</p>
+  press enter to rest an order there. Hover or focus almost anything for an
+  explanation, and the tour button walks the screen in a minute.</p>
 </details>
 
 <details class="about panel">
@@ -266,9 +300,10 @@
   done. This is the interesting part. Watch the desks table during a shaded
   stretch: the informed trader gets paid, and whoever was quoting tight
   spreads takes the other side of a trade they would not have chosen. Over a
-  long session mm-fixed bleeds, mm-skew roughly breaks even, and mm-wary,
-  which trades the least, is usually the only maker in the green. That is
-  adverse selection, and nobody scripted it: it falls out of the simulation.</p>
+  long session mm-fixed bleeds, mm-skew grinds out a little, and mm-wary makes
+  about the same as mm-skew on a quarter of the volume, which means it earns
+  several times more on every lot it touches. That is adverse selection, and
+  nobody scripted it: it falls out of the simulation.</p>
 
   <p>You have a desk too. Click a side of the book to rest a limit order at
   that price, or hit the market buttons. One honest way to make money: when an
@@ -277,15 +312,15 @@
   earn the spread like the makers do, then get out of the way when the shading
   starts. Your fills print on the tape with a marker.</p>
 
-  <p>What this toy leaves out, so you don't have to wonder: latency (everyone
-  sees the book at the same instant), fees and rebates, more than one
-  instrument, real order-to-trade ratios, and any claim that the flow model
-  matches real markets. The matching itself is not simplified. Runs are
-  deterministic: the same seed always produces the same market, tick for
-  tick.</p>
+  <p>What this toy leaves out, so you don't have to wonder: latency for the
+  built-in desks (they all see the book at the same instant; only your bot can
+  be made slow), fees and rebates, more than one instrument, real
+  order-to-trade ratios, and any claim that the flow model matches real
+  markets. The matching itself is exact. Runs are deterministic: the same seed
+  always produces the same market, tick for tick.</p>
 
   <p class="fine">Numbers are in dollars with a one-cent tick; sizes are lots.
-  Source, tests, and native benchmarks: <a id="repo-link" href="https://github.com/MathMaster1296/pit">github.com/MathMaster1296/pit</a>.</p>
+  Source, tests, and native benchmarks: <a id="repo-link" href="https://github.com/prathammukewar/pit">github.com/prathammukewar/pit</a>.</p>
 </details>
 
 <footer>

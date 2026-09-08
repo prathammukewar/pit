@@ -7,6 +7,8 @@ import { Depth } from './depth.js';
 import { Heatmap } from './heatmap.js';
 import { BotLab, Season } from './botlab.js';
 import { SoundFx } from './sound.js';
+import { installTooltips } from './tooltip.js';
+import { Tour } from './tour.js';
 import { money, lots, price } from './fmt.js';
 
 const $ = (id) => document.getElementById(id);
@@ -79,6 +81,14 @@ const heatmap = new Heatmap($('heatmap'));
 const botLab = new BotLab(() => sim, notify);
 const season = new Season(() => seed, getConditions, () => botLab.latency());
 const sound = new SoundFx();
+const tour = new Tour(() => {
+  tips.tour = 1;
+  try {
+    localStorage.setItem('pit-tips', JSON.stringify(tips));
+  } catch {
+    // fine
+  }
+});
 let viewMode = 'chart';
 
 function getConditions() {
@@ -231,6 +241,12 @@ function drawUser(accounts, orders) {
   );
   const list = $('orders');
   list.replaceChildren();
+  if (orders.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'no open orders. click a price in the book, or join bid / join ask.';
+    list.append(empty);
+  }
   for (let i = 0; i < orders.length; i += 4) {
     const id = orders[i];
     const row = document.createElement('div');
@@ -241,7 +257,7 @@ function drawUser(accounts, orders) {
     label.style.color = buy ? 'var(--green)' : 'var(--red)';
     const cancel = document.createElement('button');
     cancel.textContent = 'x';
-    cancel.title = 'cancel';
+    cancel.dataset.tip = 'cancel this order';
     cancel.setAttribute('aria-label', `cancel ${label.textContent}`);
     cancel.addEventListener('click', () => {
       sim.user_cancel(id);
@@ -307,8 +323,15 @@ function wire() {
     notify('today\'s market: everyone in the world gets this exact seed today.');
   });
   $('sound').addEventListener('click', () => {
-    $('sound').textContent = sound.toggle() ? 'sound: on' : 'sound: off';
+    $('sound').textContent = sound.toggle() ? 'on' : 'off';
   });
+  $('settings-toggle').addEventListener('click', () => {
+    const panel = $('settings');
+    panel.hidden = !panel.hidden;
+    $('settings-toggle').setAttribute('aria-expanded', String(!panel.hidden));
+    if (!panel.hidden) panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+  $('tour').addEventListener('click', () => tour.start());
   $('view-toggle').addEventListener('click', () => {
     viewMode = viewMode === 'chart' ? 'heat' : 'chart';
     $('view-toggle').textContent = `view: ${viewMode === 'heat' ? 'heatmap' : 'chart'}`;
@@ -363,9 +386,8 @@ function remember(key, value) {
 // Sync the preference buttons and every canvas that caches palette colors.
 function applyPrefs() {
   const root = document.documentElement;
-  $('theme').textContent = `theme: ${root.dataset.theme === 'light' ? 'light' : 'dark'}`;
-  $('palette').textContent =
-    `colors: ${root.dataset.palette === 'cb' ? 'blue/orange' : 'green/red'}`;
+  $('theme').textContent = root.dataset.theme === 'light' ? 'light' : 'dark';
+  $('palette').textContent = root.dataset.palette === 'cb' ? 'blue/orange' : 'green/red';
   chart.refreshColors();
   depthChart.refreshColors();
   heatmap.refreshColors();
@@ -402,6 +424,7 @@ init()
     $('loading').hidden = true;
     $('app').hidden = false;
     wire();
+    installTooltips();
     applyPrefs();
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       $('speed').value = '1';
@@ -410,13 +433,7 @@ init()
     const fromHash = Math.floor(Number(location.hash.slice(1).split('|')[0]));
     restart(fromHash >= 1 ? fromHash : randomSeed());
     requestAnimationFrame(frame);
-    if (!tips.welcome) {
-      document.querySelector('details.about').open = true;
-    }
-    tipOnce(
-      'welcome',
-      'you have a desk: click a price in the book to rest an order there, or use the market buttons.',
-    );
+    if (!tips.tour) setTimeout(() => tour.start(), 600);
   })
   .catch((err) => {
     $('loading').textContent =
