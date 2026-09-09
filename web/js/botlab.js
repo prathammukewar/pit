@@ -497,6 +497,10 @@ export class Season {
     if (runs.length) this.reportSweep(runs, elapsed);
   }
 
+  botLink(seed) {
+    return `${location.origin}${location.pathname}#${seed}|${encodeCode($('bot-code').value)}`;
+  }
+
   open() {
     const report = $('season-report');
     report.hidden = false;
@@ -561,6 +565,14 @@ export class Season {
     canvas.setAttribute('aria-label', 'equity curves: your bot in amber, mm-wary in green');
     report.append(canvas, verdict, stats);
     drawEquity(canvas, r.botEq, r.waryEq);
+
+    const text = [
+      `${resultHeader(r.seed)} · 100,000 ticks${r.latency ? ` · ${r.latency} ticks of lag` : ''}`,
+      `your bot ${signed(botFinal)} · mm-wary ${signed(waryFinal)} · ${verdict.textContent}`,
+      `drawdown ${money(drawdown(r.botEq))} · sharpe-ish ${sharpeIsh(r.botEq).toFixed(1)} · ${r.episodes} episodes, ${r.halts} halts`,
+      this.botLink(r.seed),
+    ].join('\n');
+    report.append(copyButton(text));
   }
 
   reportLadder(runs, elapsed) {
@@ -598,6 +610,12 @@ export class Season {
         ),
       );
     }
+    const text = [
+      `${resultHeader(runs[0].seed)} · latency ladder`,
+      ...rows.map((row) => `lag ${row[0]}: ${signed(row[5])} (vs mm-wary ${row[2]})`),
+      this.botLink(runs[0].seed),
+    ].join('\n');
+    report.append(copyButton(text));
   }
 
   reportSweep(runs, elapsed) {
@@ -632,8 +650,48 @@ export class Season {
       );
       summary.className = wins > ok.length / 2 ? 'up' : '';
       report.append(summary);
+      const text = [
+        `${resultHeader(this.getSeed())} · seed sweep${runs[0].latency ? ` · ${runs[0].latency} ticks of lag` : ''}`,
+        `beat mm-wary in ${wins} of ${ok.length} seeds · mean ${signed(mean)} · worst ${signed(Math.min(...pnls))} · best ${signed(Math.max(...pnls))}`,
+        this.botLink(this.getSeed()),
+      ].join('\n');
+      report.append(copyButton(text));
     }
   }
+}
+
+function signed(v) {
+  return v > 0 ? `+${money(v)}` : money(v);
+}
+
+function dailySeed() {
+  const d = new Date();
+  return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+}
+
+// The share loop: a report as plain text with a link that carries the bot
+// and the seed, so a pasted result is also a reproducible one.
+function resultHeader(seed) {
+  const day = new Date().toISOString().slice(0, 10);
+  return seed === dailySeed() ? `pit daily ${day} · seed ${seed}` : `pit season · seed ${seed}`;
+}
+
+function copyButton(text) {
+  const b = document.createElement('button');
+  b.textContent = 'copy result';
+  b.dataset.tip = 'Copy this report as text, with a link that carries your bot and seed, for pasting anywhere.';
+  b.addEventListener('click', () => {
+    navigator.clipboard.writeText(text).then(
+      () => {
+        b.textContent = 'copied';
+        setTimeout(() => (b.textContent = 'copy result'), 2000);
+      },
+      () => {
+        b.textContent = 'clipboard blocked';
+      },
+    );
+  });
+  return b;
 }
 
 function para(text) {

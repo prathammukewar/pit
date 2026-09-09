@@ -101,6 +101,8 @@ h1 {
 }
 
 .controls label, .bot-controls label, .entry label { color: var(--muted); }
+.controls .source { color: var(--fair); text-decoration: none; padding: 5px 6px; }
+.controls .source:hover { text-decoration: underline; }
 
 input, select, button, textarea {
   font: inherit;

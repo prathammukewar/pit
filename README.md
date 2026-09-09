@@ -2,23 +2,47 @@
 
 [![ci](https://github.com/prathammukewar/pit/actions/workflows/ci.yml/badge.svg)](https://github.com/prathammukewar/pit/actions/workflows/ci.yml)
 
-A tiny exchange that runs in your browser: a real limit order book matching
-engine written in Rust, compiled to WebAssembly, with three market makers, a
-crowd of noise traders, and an occasional informed trader who knows where the
-price is going before everyone else.
+A tiny stock exchange that runs in your browser. Watch three market-making
+bots fight a crowd of noise traders and the occasional insider, trade against
+them yourself, then write your own bot and try to beat the house.
 
-**Live demo: [prathammukewar.github.io/pit](https://prathammukewar.github.io/pit)**
+**Play it: [prathammukewar.github.io/pit](https://prathammukewar.github.io/pit)**
+(nothing to install, nothing to sign up for, everything runs in your tab)
 
-[![the pit trading screen: the order book, a price chart with a shaded informed episode, and the desks table with everyone's p&l](web/card.png)](https://prathammukewar.github.io/pit/)
+![the pit floor: the book on the left, the price chart shading red as an informed trader unloads, the desks table with everyone's p&l, and the tape](web/demo.gif)
 
-That shaded band on the chart is an informed trader unloading before a drop
-they saw coming. The white line is the traded mid; the dashed line is the
-hidden fair value it is chasing.
-
-You get a desk too. Click the book to rest limit orders, hit the market
-buttons, and see if you can stay ahead of the bots. Runs are deterministic:
-the same seed always produces the same market, tick for tick, so any run can
+Under the hood it is a real limit order book matching engine written in Rust
+and compiled to WebAssembly, with a deterministic market simulation on top.
+The same seed always produces the same market, tick for tick, so any run can
 be replayed by sharing its URL.
+
+## Sixty seconds in
+
+1. Watch the chart until it shades red. That is an informed trader who can
+   see where the price is going. Keep an eye on mm-fixed's p&l while it lasts.
+2. Press "buy mkt" on your desk. Your p&l dips a few cents at once: you paid
+   the spread, which is the thing every desk on the floor is fighting over.
+3. Scroll to the bot lab, load the "join the touch" preset, press hire, and
+   then press "run a season". You just backtested a market maker across
+   100,000 ticks, in about a second, and it probably lost. Now fix it.
+
+## The mm-wary challenge
+
+mm-wary is the smartest desk on the floor. It earns the spread from the crowd,
+steps away when the flow turns toxic, and ends most seasons ahead. The standing
+challenge is to write a bot that beats it across a seed sweep (eight markets,
+default conditions, zero latency) without reading anything the other desks
+can't see.
+
+When you have one, press "share bot" for a link that carries your code and
+seed, press "copy result" on the sweep report, and
+[open an issue](https://github.com/prathammukewar/pit/issues/new?template=bot-submission.md)
+with both. Every submission is deterministic, so results are verified by
+rerunning the link. Verified bots go here:
+
+| bot | author | beat mm-wary in | mean p&l per season |
+|-----|--------|-----------------|---------------------|
+| be the first | | | |
 
 ## Why this exists
 
